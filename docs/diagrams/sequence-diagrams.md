@@ -494,40 +494,32 @@ sequenceDiagram
     participant Orch as Orchestrator
     participant IO as 在庫最適化エージェント
     participant DB as PostgreSQL
-    participant Opt as 最適化エンジン
 
-    Orch->>IO: execute demand_forecast and supplier_quality
+    Orch->>IO: execute demand and supplier data
     activate IO
     
     Note over IO: インプット確認
-    IO->>IO: demand_mean = 350demand_lower = 320demand_upper = 380supplier = A, unit_price: 95円
+    IO->>IO: demand mean = 350demand lower = 320demand upper = 380
     
     Note over IO: 現在在庫取得
-    IO->>DB: SELECT inventory_quantityFROM inventoryWHERE product_sku = tomato-mediumAND store_id = S001
+    IO->>DB: SELECT inventory quantityFROM inventory table
     DB-->>IO: 80個
     
-    Note over IO: ニュースベンダーモデルパラメータ設定
-    IO->>IO: selling_price = 198円unit_cost = 95円disposal_cost = 120円shortage_cost = 103円
+    Note over IO: ニュースベンダーモデル適用
+    IO->>IO: パラメータ設定selling price 198円unit cost 95円
     
-    Note over IO: Critical Ratio計算
-    IO->>IO: critical_ratio = shortage_cost divided by total= 103 divided by 223= 0.462
+    IO->>IO: Critical Ratio計算result = 0.462
     
-    Note over IO: 需要分布推定
-    IO->>IO: demand_std = range divided by 3.92= 60 divided by 3.92= 15.3
+    IO->>IO: 需要分布推定standard deviation = 15.3
     
-    Note over IO: 最適発注量計算
-    IO->>Opt: 正規分布パーセント点関数q=0.462, mean=350, std=15.3
-    Opt-->>IO: optimal_order = 349.4
+    IO->>IO: 最適発注量計算optimal order = 349個
     
-    IO->>IO: 現在在庫を考慮order = max value of 0 or 269結果: 269個調整後: 280個
+    IO->>IO: 在庫調整269個 to 280個
     
-    Note over IO: 発注タイミング計算
-    IO->>IO: lead_time = 6時間order_time = 05:00
+    Note over IO: 発注計画確定
+    IO->>IO: order time = 05:00safety stock = 50個
     
-    Note over IO: 安全在庫計算
-    IO->>IO: safety_stock = 350 × 0.15= 52.5 → 50個
-    
-    IO-->>Orch: AgentResultorder_quantity: 280confidence: 0.89cost: 15 JPYC
+    IO-->>Orch: order quantity 280cost 15 JPYC
     deactivate IO
 ```
 
