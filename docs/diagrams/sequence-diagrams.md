@@ -496,38 +496,38 @@ sequenceDiagram
     participant DB as PostgreSQL
     participant Opt as 最適化エンジン
 
-    Orch->>IO: execute({demand_forecast, supplier_quality})
+    Orch->>IO: execute demand_forecast and supplier_quality
     activate IO
     
     Note over IO: インプット確認
-    IO->>IO: demand_mean = 350<br/>demand_lower = 320<br/>demand_upper = 380<br/>supplier = A (unit_price: 95円)
+    IO->>IO: demand_mean = 350demand_lower = 320demand_upper = 380supplier = A, unit_price: 95円
     
     Note over IO: 現在在庫取得
-    IO->>DB: SELECT inventory_quantity FROM inventory<br/>WHERE product_sku = 'tomato-medium'<br/>AND store_id = 'S001'
+    IO->>DB: SELECT inventory_quantityFROM inventoryWHERE product_sku = tomato-mediumAND store_id = S001
     DB-->>IO: 80個
     
     Note over IO: ニュースベンダーモデルパラメータ設定
-    IO->>IO: selling_price = 198円<br/>unit_cost = 95円<br/>disposal_cost = 120円<br/>shortage_cost = 103円
+    IO->>IO: selling_price = 198円unit_cost = 95円disposal_cost = 120円shortage_cost = 103円
     
     Note over IO: Critical Ratio計算
-    IO->>IO: critical_ratio = <br/>103 / (103 + 120) = 0.462
+    IO->>IO: critical_ratio = shortage_cost divided by total= 103 divided by 223= 0.462
     
     Note over IO: 需要分布推定
-    IO->>IO: demand_std = <br/>(380 - 320) / 3.92 = 15.3
+    IO->>IO: demand_std = range divided by 3.92= 60 divided by 3.92= 15.3
     
     Note over IO: 最適発注量計算
-    IO->>Opt: norm.ppf(q=0.462, loc=350, scale=15.3)
+    IO->>Opt: 正規分布パーセント点関数q=0.462, mean=350, std=15.3
     Opt-->>IO: optimal_order = 349.4
     
-    IO->>IO: 現在在庫を考慮<br/>order = max(0, 349 - 80) = 269<br/>→ 280個（10個単位調整）
+    IO->>IO: 現在在庫を考慮order = max value of 0 or 269結果: 269個調整後: 280個
     
     Note over IO: 発注タイミング計算
-    IO->>IO: lead_time = 6時間<br/>order_time = 05:00
+    IO->>IO: lead_time = 6時間order_time = 05:00
     
     Note over IO: 安全在庫計算
-    IO->>IO: safety_stock = 350 * 0.15 = 50個
+    IO->>IO: safety_stock = 350 × 0.15= 52.5 → 50個
     
-    IO-->>Orch: AgentResult{<br/>  success: true,<br/>  data: {order_quantity: 280, ...},<br/>  confidence: 0.89,<br/>  cost: 15<br/>}
+    IO-->>Orch: AgentResultorder_quantity: 280confidence: 0.89cost: 15 JPYC
     deactivate IO
 ```
 
