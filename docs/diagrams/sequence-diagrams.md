@@ -445,45 +445,35 @@ Validation Registry
 sequenceDiagram
     autonumber
     participant Orch as Orchestrator
-    participant DF as 需要予測エージェント
+    participant IO as 在庫最適化エージェント
     participant DB as PostgreSQL
-    participant Weather as 気象庁API
-    participant Cache as Redis
-    participant Model as LightGBMモデル
 
-    Orch->>DF: execute({product_sku, store_id})
-    activate DF
+    Orch->>IO: execute demand and supplier data
+    activate IO
     
-    Note over DF: Step 1: POSデータ取得
-    DF->>Cache: GET df:{sku}:{store}:{date}
-    Cache-->>DF: Cache Miss
+    Note over IO: インプット確認
+    IO->>IO: demand mean = 350demand lower = 320demand upper = 380
     
-    DF->>DB: SELECT * FROM pos_sales<br/>WHERE product_sku = 'tomato-medium'<br/>AND store_id = 'S001'<br/>AND date >= CURRENT_DATE - INTERVAL '3 years'
-    DB-->>DF: 1095行（3年分）
+    Note over IO: 現在在庫取得
+    IO->>DB: SELECT inventory quantityFROM inventory table
+    DB-->>IO: 80個
     
-    Note over DF: Step 2: 気象データ取得
-    DF->>DB: SELECT latitude, longitude FROM stores<br/>WHERE store_id = 'S001'
-    DB-->>DF: {lat: 35.6895, lon: 139.6917}
+    Note over IO: ニュースベンダーモデル適用
+    IO->>IO: パラメータ設定selling price 198円unit cost 95円
     
-    DF->>Weather: GET /forecast?lat=35.6895&lon=139.6917
-    Weather-->>DF: {<br/>  temperature: 12,<br/>  precipitation: 0.3,<br/>  weather_code: "cloudy"<br/>}
+    IO->>IO: Critical Ratio計算result = 0.462
     
-    Note over DF: Step 3: 特徴量エンジニアリング
-    DF->>DF: build_features()<br/>- 曜日ダミー変数<br/>- 祝日フラグ<br/>- 気温・降水確率<br/>- 過去7日移動平均<br/>- 季節性（月）
+    IO->>IO: 需要分布推定standard deviation = 15.3
     
-    Note over DF: Step 4: 予測実行
-    DF->>Model: predict(features)
-    Model-->>DF: prediction = 350.2
+    IO->>IO: 最適発注量計算optimal order = 349個
     
-    DF->>DF: 信頼区間算出<br/>lower = 350.2 * 0.91 = 318.7<br/>upper = 350.2 * 1.09 = 381.7
+    IO->>IO: 在庫調整269個 to 280個
     
-    Note over DF: Step 5: キャッシュ保存
-    DF->>Cache: SET df:{sku}:{store}:{date}<br/>value: {predicted: 350, lower: 319, upper: 382}<br/>TTL: 24時間
+    Note over IO: 発注計画確定
+    IO->>IO: order time = 05:00safety stock = 50個
     
-    DF->>DF: コスト計算<br/>base: 3 JPYC<br/>data_rows: 1095<br/>total: 10 JPYC (upto上限内)
-    
-    DF-->>Orch: AgentResult{<br/>  success: true,<br/>  data: {predicted_demand: 350, ...},<br/>  confidence: 0.92,<br/>  execution_time: 8.2,<br/>  cost: 10<br/>}
-    deactivate DF
+    IO-->>Orch: order quantity 280cost 15 JPYC
+    deactivate IO
 ```
 
 ### 5.2 在庫最適化エージェントの詳細
