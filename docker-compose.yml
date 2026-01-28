@@ -30,6 +30,9 @@ services:
     command: anvil --host 0.0.0.0 --chain-id 31337
     ports:
       - "8545:8545"
+    volumes:
+      - ./contracts:/contracts
+    working_dir: /contracts
     networks:
       - a2a-network
     healthcheck:
@@ -58,6 +61,8 @@ services:
       - a2a-network
     volumes:
       - ./python:/app
+      - ./deployments.txt:/deployments.txt:ro
+      - ./contracts:/contracts:ro
     command: python main.py
 
   # Phase 2以降で追加
