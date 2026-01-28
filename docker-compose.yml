@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: a2a-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-a2a_supply_chain}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./db/seed_data.sql:/docker-entrypoint-initdb.d/02-seed_data.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - a2a-network
+
+  # Anvil - ローカルEthereumチェーン
+  anvil:
+    image: ghcr.io/foundry-rs/foundry:latest
+    container_name: a2a-anvil
+    command: anvil --host 0.0.0.0 --chain-id 31337
+    ports:
+      - "8545:8545"
+    networks:
+      - a2a-network
+    healthcheck:
+      test: ["CMD", "cast", "client", "--rpc-url", "http://localhost:8545"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Python Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: a2a-app
+    environment:
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/a2a_supply_chain
+      ANVIL_RPC_URL: http://anvil:8545
+      ENVIRONMENT: development
+      LOG_LEVEL: INFO
+    depends_on:
+      postgres:
+        condition: service_healthy
+      anvil:
+        condition: service_healthy
+    networks:
+      - a2a-network
+    volumes:
+      - ./python:/app
+    command: python main.py
+
+  # Phase 2以降で追加
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: a2a-redis
+  #   ports:
+  #     - "6379:6379"
+  #   networks:
+  #     - a2a-network
+
+volumes:
+  postgres_data:
+
+networks:
+  a2a-network:
+    driver: bridge
