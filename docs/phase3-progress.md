@@ -176,33 +176,91 @@ LLMベースのエージェントシステムと、Agent-to-Agent (A2A) マイ�
 
 ---
 
-## 🔄 次のステップ（Phase 3 残り）
+### Step 5: Orchestrator実装 ✅
+**完了日**: 2026-01-29
 
-### Step 5: Orchestrator実装（未着手）
-**目標**: LLMエージェントとX402決済を統合したオーケストレータ
+**実装内容**:
+- SupplyChainOrchestratorクラスの実装
+- LLMエージェントとX402決済の統合
+- モック実行モードと実LLMモードのサポート
+- エージェント設定管理とコスト計算
 
-**実装予定**:
-- `python/orchestrator_llm.py`: LLMエージェント用Orchestrator
-  - エージェント実行順序管理
-  - X402決済フロー統合
-  - エラーハンドリング
-  - ログ記録
+**成果物**:
+- `python/orchestrator_llm.py`: SupplyChainOrchestrator
+  - `AgentConfig`: エージェント設定（ID、決済スキーム、コスト）
+  - `execute_optimization()`: 最適化フロー実行
+    - Phase 1: 需要予測（UPTO: 3 + 0.02/1000レコード）
+    - Phase 2: 在庫最適化（EXACT: 15 JPYC）
+    - Phase 3: レポート生成（DEFERRED: 5 JPYC）
+  - X402Client統合
+  - モック実装（use_real_llm=False）
+  - 実LLM対応（use_real_llm=True、CrewAI必須）
+  - エラーハンドリングとログ出力
+  - 結果集計とサマリー表示
 
-**依存関係**:
-- Step 3のLLMエージェント実装
-- Step 4のX402決済フロー
+- `python/test_orchestrator.py`: 統合テスト
+  - test_orchestrator_mock(): 基本動作テスト
+  - test_multiple_products(): 複数商品最適化テスト
+
+**アーキテクチャ**:
+```
+1. X402Request作成（各エージェント用）
+2. エージェントタスク実行（モックまたは実LLM）
+3. 使用量メトリクスに基づくコスト計算
+4. X402Response作成
+5. X402Clientで決済処理
+6. 結果集計とサマリー表示
+```
+
+**検証結果**:
+```bash
+✅ すべてのテストに合格 (2/2)
+
+テスト1: 基本動作
+  総コスト: 23.04 JPYC
+  実行時間: < 1ms
+
+テスト2: 複数商品（トマト + レタス）
+  総トランザクション: 6
+  総支払額: 46.08 JPYC
+  スキーム別: EXACT 2件, UPTO 2件, DEFERRED 2件
+```
+
+**特徴**:
+- CrewAI依存はオプショナル（モックモードでは不要）
+- use_real_llm=Falseでテスト可能
+- 実LLM使用時のみCrewAI必須
+- 柔軟なエージェント設定
+- 詳細な結果サマリー表示
 
 ---
 
+## 🔄 次のステップ（Phase 3 残り）
+
 ### Step 6: 統合テスト（未着手）
-**目標**: End-to-Endテスト
+**目標**: 実LLMを使ったEnd-to-Endテスト
 
 **テスト項目**:
-- [ ] 3エージェント協調動作
-- [ ] X402決済フロー
-- [ ] タイムアウト処理
-- [ ] エラーハンドリング
-- [ ] パフォーマンス（実行時間 < 3分）
+- [ ] 実LLM（CrewAI + Ollama）でのOrchestrator実行
+- [ ] 3エージェント協調動作の検証
+- [ ] X402決済フローの完全検証
+- [ ] タイムアウト処理の確認
+- [ ] エラーハンドリングの検証
+- [ ] パフォーマンス測定（実行時間）
+
+**アプローチ候補**:
+1. **簡易版テスト（推奨）**:
+   - より簡単なプロンプトで試す
+   - タイムアウトを延長（1200秒）
+   - 1エージェントずつテスト
+
+2. **Docker環境で完全テスト**:
+   - `docker compose run app python test_llm_agents.py`
+   - 必要に応じてモデル変更（qwen:7b等）
+
+3. **Orchestrator + 実LLM**:
+   - test_orchestrator.pyに実LLMオプション追加
+   - Docker環境で実行
 
 ---
 
@@ -214,10 +272,10 @@ LLMベースのエージェントシステムと、Agent-to-Agent (A2A) マイ�
 | 2 | CrewAI + Ollama統合 | ✅ 完了 | 2026-01-29 |
 | 3 | LLMエージェント実装 | ✅ 完了 | 2026-01-29 |
 | 4 | X402決済プロトコル実装 | ✅ 完了 | 2026-01-29 |
-| 5 | Orchestrator実装 | ⏳ 未着手 | - |
-| 6 | 統合テスト | ⏳ 未着手 | - |
+| 5 | Orchestrator実装 | ✅ 完了 | 2026-01-29 |
+| 6 | 統合テスト（実LLM） | ⏳ 未着手 | - |
 
-**進捗率**: 67% (4/6 ステップ完了)
+**進捗率**: 83% (5/6 ステップ完了)
 
 ---
 
@@ -320,5 +378,5 @@ optimal_quantity = demand_mean + z_score * demand_std
 
 ---
 
-**最終更新**: 2026-01-29
-**次回更新予定**: Step 5 Orchestrator実装後
+**最終更新**: 2026-01-29 (Step 5完了)
+**次回更新予定**: Step 6 統合テスト実施後
