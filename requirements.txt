@@ -24,7 +24,7 @@ scikit-learn==1.4.0
 scipy==1.11.4
 
 # Async
-aiohttp==3.9.1
+aiohttp>=3.11.0
 asyncio==3.4.3
 
 # Logging
