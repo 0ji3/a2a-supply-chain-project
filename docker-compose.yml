@@ -41,6 +41,22 @@ services:
       timeout: 5s
       retries: 5
 
+  # Ollama - ローカルLLMサーバー
+  ollama:
+    image: ollama/ollama:latest
+    container_name: a2a-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - a2a-network
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # Python Application
   app:
     build:
@@ -50,12 +66,15 @@ services:
     environment:
       DATABASE_URL: postgresql://postgres:password@postgres:5432/a2a_supply_chain
       ANVIL_RPC_URL: http://anvil:8545
+      OLLAMA_BASE_URL: http://ollama:11434
       ENVIRONMENT: development
       LOG_LEVEL: INFO
     depends_on:
       postgres:
         condition: service_healthy
       anvil:
+        condition: service_healthy
+      ollama:
         condition: service_healthy
     networks:
       - a2a-network
@@ -76,6 +95,7 @@ services:
 
 volumes:
   postgres_data:
+  ollama_data:
 
 networks:
   a2a-network:
