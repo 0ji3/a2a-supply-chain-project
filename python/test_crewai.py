@@ -30,7 +30,7 @@ def test_crewai_basic():
 
         # CrewAI LLMインスタンスを作成
         llm = LLM(
-            model="ollama/mistral:7b",
+            model="ollama/gemma2:2b",
             base_url=ollama_url
         )
         print("   ✓ LLM初期化完了")

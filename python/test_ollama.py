@@ -26,7 +26,7 @@ def test_ollama_connection():
         print("\n2. Ollamaインスタンスを作成...")
         llm = OllamaLLM(
             base_url=ollama_url,
-            model="mistral:7b",
+            model="gemma2:2b",
             temperature=0.7
         )
         print("   ✓ インスタンス作成完了")

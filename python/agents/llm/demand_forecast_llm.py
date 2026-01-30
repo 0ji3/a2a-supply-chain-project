@@ -20,7 +20,7 @@ def create_demand_forecast_agent() -> Agent:
     os.environ["OLLAMA_API_BASE"] = ollama_url
 
     llm = LLM(
-        model="ollama/mistral:7b",
+        model="ollama/gemma2:2b",
         base_url=ollama_url
     )
 
