@@ -69,6 +69,13 @@ services:
       OLLAMA_BASE_URL: http://ollama:11434
       ENVIRONMENT: development
       LOG_LEVEL: INFO
+      # Polygon Amoy (Phase 4)
+      POLYGON_AMOY_RPC_URL: ${POLYGON_AMOY_RPC_URL}
+      PRIVATE_KEY: ${PRIVATE_KEY}
+      DEPLOYER_ADDRESS: ${DEPLOYER_ADDRESS}
+      ERC8004_IDENTITY: ${ERC8004_IDENTITY}
+      ERC8004_REPUTATION: ${ERC8004_REPUTATION}
+      MOCK_JPYC: ${MOCK_JPYC}
     depends_on:
       postgres:
         condition: service_healthy

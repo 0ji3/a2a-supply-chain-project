@@ -20,7 +20,7 @@ def create_inventory_optimizer_agent() -> Agent:
     os.environ["OLLAMA_API_BASE"] = ollama_url
 
     llm = LLM(
-        model="ollama/gemma2:2b",
+        model="ollama/gemma2:9b",
         base_url=ollama_url
     )
 
