@@ -57,29 +57,34 @@ services:
       timeout: 5s
       retries: 5
 
-  # Python Application
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: a2a-app
+  # Backend API (FastAPI)
+  api:
+    image: python:3.11-slim
+    container_name: a2a-api
     environment:
       DATABASE_URL: postgresql://postgres:password@postgres:5432/a2a_supply_chain
       ANVIL_RPC_URL: http://anvil:8545
       OLLAMA_BASE_URL: http://ollama:11434
       ENVIRONMENT: development
       LOG_LEVEL: INFO
-      # Polygon Amoy (Phase 4)
+      # Polygon Amoy (Phase 5)
       POLYGON_AMOY_RPC_URL: ${POLYGON_AMOY_RPC_URL}
       PRIVATE_KEY: ${PRIVATE_KEY}
       DEPLOYER_ADDRESS: ${DEPLOYER_ADDRESS}
       ERC8004_IDENTITY: ${ERC8004_IDENTITY}
       ERC8004_REPUTATION: ${ERC8004_REPUTATION}
       MOCK_JPYC: ${MOCK_JPYC}
+      # Agent Wallets (Phase 5)
+      AGENT_DEMAND_FORECAST_ADDRESS: ${AGENT_DEMAND_FORECAST_ADDRESS}
+      AGENT_DEMAND_FORECAST_PRIVATE_KEY: ${AGENT_DEMAND_FORECAST_PRIVATE_KEY}
+      AGENT_INVENTORY_OPTIMIZER_ADDRESS: ${AGENT_INVENTORY_OPTIMIZER_ADDRESS}
+      AGENT_INVENTORY_OPTIMIZER_PRIVATE_KEY: ${AGENT_INVENTORY_OPTIMIZER_PRIVATE_KEY}
+      AGENT_REPORT_GENERATOR_ADDRESS: ${AGENT_REPORT_GENERATOR_ADDRESS}
+      AGENT_REPORT_GENERATOR_PRIVATE_KEY: ${AGENT_REPORT_GENERATOR_PRIVATE_KEY}
+    ports:
+      - "8000:8000"
     depends_on:
       postgres:
-        condition: service_healthy
-      anvil:
         condition: service_healthy
       ollama:
         condition: service_healthy
@@ -87,9 +92,26 @@ services:
       - a2a-network
     volumes:
       - ./python:/app
-      - ./deployments.txt:/deployments.txt:ro
-      - ./contracts:/contracts:ro
-    command: python main.py
+    working_dir: /app
+    command: sh -c "pip install --quiet -r requirements.txt && uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload"
+
+  # Frontend (Next.js)
+  frontend:
+    image: node:20-alpine
+    container_name: a2a-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    networks:
+      - a2a-network
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    working_dir: /app
+    command: sh -c "npm install --silent && npm run dev"
+    environment:
+      - NODE_ENV=development
 
   # Phase 2以降で追加
   # redis:
