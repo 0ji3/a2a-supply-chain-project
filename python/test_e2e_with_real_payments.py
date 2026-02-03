@@ -60,6 +60,16 @@ def test_e2e_with_real_payments():
     )
     print(f"\n✓ X402 Client initialized")
 
+    # エージェントウォレット（Phase 5）
+    agent_wallets = {
+        "demand_forecast": os.getenv("AGENT_DEMAND_FORECAST_ADDRESS"),
+        "inventory_optimizer": os.getenv("AGENT_INVENTORY_OPTIMIZER_ADDRESS"),
+        "report_generator": os.getenv("AGENT_REPORT_GENERATOR_ADDRESS"),
+    }
+    print(f"\n✓ Agent Wallets:")
+    for agent, address in agent_wallets.items():
+        print(f"  {agent}: {address}")
+
     # ========================================
     # ビジネスパラメータ
     # ========================================
@@ -189,7 +199,7 @@ def test_e2e_with_real_payments():
         status="success",
         result={"forecast": str(forecast_result)},
         actual_amount=demand_request.base_amount,
-        payment_address=blockchain_service.address,
+        payment_address=agent_wallets["demand_forecast"],
         execution_time_ms=1000
     )
 
@@ -255,7 +265,7 @@ B農園: 110円、品質88
         status="success",
         result={"optimization": str(optimize_result)},
         actual_amount=inventory_request.base_amount,
-        payment_address=blockchain_service.address,
+        payment_address=agent_wallets["inventory_optimizer"],
         execution_time_ms=500
     )
 
@@ -323,7 +333,7 @@ B農園: 110円、品質88
         status="success",
         result={"report": str(report_result)},
         actual_amount=report_request.base_amount,
-        payment_address=blockchain_service.address,
+        payment_address=agent_wallets["report_generator"],
         execution_time_ms=800
     )
 
