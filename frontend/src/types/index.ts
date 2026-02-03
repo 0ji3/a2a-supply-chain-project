@@ -31,3 +31,12 @@ export interface OptimizationRequest {
   day_type?: string;
   unit_price?: number;
 }
+
+export interface AgentInfo {
+  id: string;
+  name: string;
+  address: string;
+  jpyc_balance: number;
+  status: 'idle' | 'running' | 'completed' | 'error';
+  progress: number;
+}

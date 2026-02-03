@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import type { LogEntry, AgentStatus, Transaction } from '@/types';
+import type { LogEntry, AgentStatus, Transaction, AgentInfo } from '@/types';
 
 export default function DashboardPage() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -11,6 +11,7 @@ export default function DashboardPage() {
     report_generator: { status: 'idle', progress: 0 },
   });
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [agents, setAgents] = useState<AgentInfo[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const logsEndRef = useRef<HTMLDivElement>(null);
 
@@ -30,6 +31,10 @@ export default function DashboardPage() {
 
       if (data.type === 'status') {
         setAgentStatus(data.data);
+      } else if (data.type === 'task_complete') {
+        // タスク完了通知を受信
+        console.log('Task completed, enabling button');
+        setIsRunning(false);
       } else {
         setLogs((prev) => [...prev, data]);
       }
@@ -38,6 +43,7 @@ export default function DashboardPage() {
     eventSource.onerror = () => {
       console.error('SSE connection error');
       eventSource.close();
+      setIsRunning(false); // エラー時もボタンを再度有効化
     };
 
     return () => {
@@ -61,6 +67,27 @@ export default function DashboardPage() {
 
     return () => clearInterval(interval);
   }, [isRunning]);
+
+  // エージェント情報とウォレット残高を取得
+  useEffect(() => {
+    const fetchAgents = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/api/agents');
+        const data = await response.json();
+        setAgents(data.agents);
+      } catch (error) {
+        console.error('Failed to fetch agents:', error);
+      }
+    };
+
+    // 初回取得
+    fetchAgents();
+
+    // 5秒ごとに更新（残高が変わる可能性があるため）
+    const interval = setInterval(fetchAgents, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   // 最適化タスクを開始
   const startOptimization = async () => {
@@ -186,6 +213,17 @@ export default function DashboardPage() {
             <div className="mt-2 text-xs text-gray-400">
               Progress: {agentStatus.demand_forecast.progress}%
             </div>
+            {agents.find(a => a.id === 'demand_forecast') && (
+              <div className="mt-2 pt-2 border-t border-gray-700">
+                <div className="text-xs text-gray-500 mb-1">Wallet Balance:</div>
+                <div className="font-mono text-sm text-purple-400">
+                  {agents.find(a => a.id === 'demand_forecast')?.jpyc_balance.toLocaleString()} JPYC
+                </div>
+                <div className="text-xs text-gray-500 mt-1 truncate">
+                  {agents.find(a => a.id === 'demand_forecast')?.address}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* 在庫最適化エージェント */}
@@ -210,6 +248,17 @@ export default function DashboardPage() {
             <div className="mt-2 text-xs text-gray-400">
               Progress: {agentStatus.inventory_optimizer.progress}%
             </div>
+            {agents.find(a => a.id === 'inventory_optimizer') && (
+              <div className="mt-2 pt-2 border-t border-gray-700">
+                <div className="text-xs text-gray-500 mb-1">Wallet Balance:</div>
+                <div className="font-mono text-sm text-purple-400">
+                  {agents.find(a => a.id === 'inventory_optimizer')?.jpyc_balance.toLocaleString()} JPYC
+                </div>
+                <div className="text-xs text-gray-500 mt-1 truncate">
+                  {agents.find(a => a.id === 'inventory_optimizer')?.address}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* レポート生成エージェント */}
@@ -234,6 +283,17 @@ export default function DashboardPage() {
             <div className="mt-2 text-xs text-gray-400">
               Progress: {agentStatus.report_generator.progress}%
             </div>
+            {agents.find(a => a.id === 'report_generator') && (
+              <div className="mt-2 pt-2 border-t border-gray-700">
+                <div className="text-xs text-gray-500 mb-1">Wallet Balance:</div>
+                <div className="font-mono text-sm text-purple-400">
+                  {agents.find(a => a.id === 'report_generator')?.jpyc_balance.toLocaleString()} JPYC
+                </div>
+                <div className="text-xs text-gray-500 mt-1 truncate">
+                  {agents.find(a => a.id === 'report_generator')?.address}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

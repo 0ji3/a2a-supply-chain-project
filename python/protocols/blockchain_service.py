@@ -105,9 +105,27 @@ class BlockchainService:
         matic_balance_eth = self.w3.from_wei(matic_balance, 'ether')
 
         # JPYC残高（balanceOf関数を呼び出し）
-        # 簡易版: transfer ABIしかないので、別途取得が必要
-        # ここでは0を返す（後で拡張可能）
-        jpyc_balance = 0
+        try:
+            # balanceOf用のABI
+            balance_abi = [{
+                "constant": True,
+                "inputs": [{"name": "_owner", "type": "address"}],
+                "name": "balanceOf",
+                "outputs": [{"name": "balance", "type": "uint256"}],
+                "type": "function"
+            }]
+
+            # JPYCコントラクト（balanceOf用）
+            jpyc_contract_read = self.w3.eth.contract(
+                address=Web3.to_checksum_address(self.jpyc_address),
+                abi=balance_abi
+            )
+
+            # balanceOf呼び出し
+            jpyc_balance = jpyc_contract_read.functions.balanceOf(checksum_addr).call()
+        except Exception as e:
+            print(f"Warning: Failed to get JPYC balance: {e}")
+            jpyc_balance = 0
 
         return {
             "address": addr,
